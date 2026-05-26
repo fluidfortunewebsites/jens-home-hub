@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#1a1a18" />
+<title>Jen's Home Hub</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff; --bg2: #f7f6f3; --bg3: #efefec;
+    --text: #1a1a18; --text2: #6b6b67; --text3: #a8a8a3;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --green: #2d6a4f; --red: #991b1b;
+    --radius: 8px; --radius-lg: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
+      --text: #f0ede8; --text2: #a8a49e; --text3: #6b6865;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+      --green: #6ee7b7; --red: #fca5a5;
+    }
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg3);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    padding-top: env(safe-area-inset-top, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    overflow-x: hidden;
+  }
+
+  .app { max-width: 860px; margin: 0 auto; padding: 0 0 4rem; }
+
+  .hub-header {
+    padding: 1.75rem 1.75rem 0;
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .hub-title { font-family: 'DM Serif Display', serif; font-size: 24px; font-weight: 400; color: var(--text); margin-bottom: 1rem; }
+  .hub-title span { font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text3); font-weight: 400; margin-left: 10px; vertical-align: middle; }
+
+  .tabs { display: flex; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex-shrink: 0; }
+  .tab { padding: 10px 20px; font-size: 13px; font-weight: 500; border: none; background: none; cursor: pointer; color: var(--text2); border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; white-space: nowrap; font-family: 'DM Sans', sans-serif; }
+  .tab i { margin-right: 6px; font-size: 15px; vertical-align: -2px; }
+  .tab.active { color: var(--text); border-bottom: 2px solid var(--text); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  .panel { display: none; padding: 1.75rem; }
+  .panel.active { display: block; }
+
+  @media (max-width: 480px) {
+    .hub-header { padding: 1rem 1rem 0; }
+    .hub-title { font-size: 20px; margin-bottom: 0.75rem; }
+    .tab { padding: 9px 14px; font-size: 12px; }
+    .panel { padding: 1rem; }
+  }
+
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .field-group label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; }
+
+  input[type=text], select, textarea {
+    padding: 9px 11px; border: 0.5px solid var(--border2); border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; background: var(--bg); color: var(--text); width: 100%;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--text); }
+  textarea { resize: vertical; min-height: 72px; line-height: 1.6; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); transition: background 0.12s, transform 0.08s; white-space: nowrap; }
+  .btn:hover { background: var(--bg2); }
+  .btn:active { transform: scale(0.98); }
+  .btn i { font-size: 15px; }
+  .btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .btn.primary:hover { opacity: 0.85; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--text); color: var(--bg); padding: 9px 20px; border-radius: 99px; font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 9999; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* CALL OUT */
+  .co-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 520px) { .co-grid { grid-template-columns: 1fr; } }
+
+  .preview-box { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin: 1.1rem 0; }
+  .preview-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+  #script-preview { font-size: 14px; line-height: 1.75; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+
+  /* TASKS */
+  .task-add-row { display: flex; gap: 8px; margin-bottom: 1.25rem; align-items: flex-end; }
+  .task-add-row input { flex: 1; }
+  .task-add-row select { width: 130px; flex-shrink: 0; }
+
+  .progress-wrap { margin-bottom: 1.25rem; }
+  .progress-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text3); margin-bottom: 6px; }
+  .progress-track { height: 3px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--green); border-radius: 99px; transition: width 0.35s ease; }
+
+  .section-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; margin: 1.1rem 0 8px; }
+
+  .task-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .task-item:last-child { border-bottom: none; }
+  .task-item input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--text); flex-shrink: 0; cursor: pointer; }
+  .task-text { flex: 1; font-size: 14px; color: var(--text); line-height: 1.4; }
+  .task-text.done { text-decoration: line-through; color: var(--text3); }
+  .task-cat { font-size: 11px; padding: 2px 9px; border-radius: 99px; border: 0.5px solid var(--border); color: var(--text2); background: var(--bg2); white-space: nowrap; }
+  .task-del { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; padding: 2px; line-height: 1; flex-shrink: 0; }
+  .task-del:hover { color: var(--red); }
+
+  .quick-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 99px; border: 0.5px solid var(--border2); background: var(--bg); font-size: 12px; color: var(--text2); cursor: pointer; margin: 0 6px 8px 0; font-family: 'DM Sans', sans-serif; transition: background 0.12s; }
+  .quick-chip:hover { background: var(--bg2); color: var(--text); }
+  .quick-chip i { font-size: 13px; }
+
+  /* FOOD */
+  .map-controls { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 1rem; }
+  .map-controls label { font-size: 12px; color: var(--text2); white-space: nowrap; }
+
+  .map-frame { width: 100%; height: 390px; border-radius: var(--radius-lg); border: 0.5px solid var(--border); overflow: hidden; margin-bottom: 1.5rem; background: var(--bg2); }
+  .map-frame iframe { width: 100%; height: 100%; border: none; display: block; }
+
+  .spots-add { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-bottom: 1.5rem; }
+  .spots-add-title { font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 12px; }
+  .spots-add-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  @media (max-width: 520px) { .spots-add-grid { grid-template-columns: 1fr; } }
+
+  .stars-pick { display: flex; gap: 2px; }
+  .stars-pick button { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--border2); padding: 0; line-height: 1; transition: color 0.1s; }
+  .stars-pick button.lit { color: #d97706; }
+
+  .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .chip { padding: 5px 13px; border-radius: 99px; border: 0.5px solid var(--border); background: var(--bg2); font-size: 12px; color: var(--text2); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.12s; }
+  .chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .chip:hover:not(.active) { background: var(--bg3); }
+
+  .sort-row { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; }
+  .sort-row label { font-size: 12px; color: var(--text2); }
+  .sort-row select { width: auto; padding: 6px 10px; }
+
+  .place-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 10px; transition: border-color 0.15s; }
+  .place-card:hover { border-color: var(--border2); }
+  .place-card.fav { border-color: #d97706; }
+
+  .place-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+  .place-name { font-weight: 500; font-size: 15px; color: var(--text); line-height: 1.3; }
+  .place-type-badge { font-size: 11px; padding: 2px 9px; border-radius: 99px; border: 0.5px solid var(--border); color: var(--text2); background: var(--bg2); white-space: nowrap; flex-shrink: 0; }
+
+  .place-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+  .place-addr { font-size: 12px; color: var(--text2); }
+  .place-zip { font-size: 12px; color: var(--text3); font-weight: 500; }
+  .stars-display { color: #d97706; font-size: 13px; letter-spacing: 1px; }
+
+  .place-note { font-size: 13px; color: var(--text2); font-style: italic; line-height: 1.5; margin-bottom: 10px; }
+
+  .review-preview { background: var(--bg2); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 10px; font-size: 12px; color: var(--text2); line-height: 1.6; border-left: 2px solid var(--border2); display: none; }
+  .place-card:hover .review-preview { display: block; }
+
+  .place-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .place-actions { display: flex; gap: 6px; align-items: center; }
+
+  .icon-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 17px; padding: 3px; line-height: 1; transition: color 0.12s; }
+  .icon-btn:hover { color: var(--text); }
+  .icon-btn.fav-btn.lit { color: #d97706; }
+  .icon-btn.del-btn:hover { color: var(--red); }
+
+  .copy-card-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 99px; border: 0.5px solid var(--border2); background: var(--bg); font-size: 12px; color: var(--text2); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.12s; }
+  .copy-card-btn:hover { background: var(--bg2); color: var(--text); }
+  .copy-card-btn i { font-size: 13px; }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 14px; line-height: 1.7; }
+  .empty-state i { font-size: 32px; display: block; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hub-header">
+    <div class="hub-title">Jen's Home Hub <span>Tacoma, WA</span></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="callout" onclick="switchTab('callout')"><i class="ti ti-phone-off"></i>Call Out</button>
+      <button class="tab" data-tab="tasks" onclick="switchTab('tasks')"><i class="ti ti-checklist"></i>Household</button>
+      <button class="tab" data-tab="food" onclick="switchTab('food')"><i class="ti ti-map-pin"></i>Mexican Spots</button>
+    </div>
+  </div>
+
+  <!-- CALL OUT -->
+  <div id="panel-callout" class="panel active">
+    <div class="co-grid">
+      <div class="field-group">
+        <label>Your name</label>
+        <input id="co-name" type="text" placeholder="Jen" oninput="buildScript()" />
+      </div>
+      <div class="field-group">
+        <label>Supervisor / who you're telling</label>
+        <input id="co-sup" type="text" placeholder="Sarah" oninput="buildScript()" />
+      </div>
+      <div class="field-group">
+        <label>Reason</label>
+        <select id="co-reason" onchange="buildScript()">
+          <option value="not feeling well">Not feeling well</option>
+          <option value="sick with a cold or flu">Cold or flu</option>
+          <option value="a family emergency">Family emergency</option>
+          <option value="a personal matter">Personal matter</option>
+          <option value="a medical appointment">Medical appointment</option>
+          <option value="car trouble">Car trouble</option>
+          <option value="a mental health day">Mental health day</option>
+          <option value="IDFFLTGTW">I don't f***ing feel like going to work</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Expected return</label>
+        <select id="co-return" onchange="buildScript()">
+          <option value="tomorrow">Tomorrow</option>
+          <option value="later this week">Later this week</option>
+          <option value="Monday">Monday</option>
+          <option value="next week">Next week</option>
+          <option value="after the holidays">After the holidays</option>
+          <option value="when I feel better">When I feel better</option>
+          <option value="when I feel like it">When I feel like it</option>
+          <option value="TBD — I'll keep you posted">TBD — I'll keep you posted</option>
+          <option value="NOPE">Never — this is my two-weeks-ago notice. I actually don't even work there anymore.</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-group" style="margin-bottom:0">
+      <label>Extra note (optional)</label>
+      <textarea id="co-extra" placeholder="e.g. my tasks are covered, reach out to Marcus if urgent..." oninput="buildScript()"></textarea>
+    </div>
+    <div class="preview-box">
+      <div class="preview-label">Your message — ready to copy</div>
+      <div id="script-preview"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="copyScript()"><i class="ti ti-copy"></i>Copy message</button>
+      <button class="btn" onclick="shareScript()"><i class="ti ti-share"></i>Share / notes</button>
+      <button class="btn" onclick="textScript()"><i class="ti ti-message"></i>Open in texts</button>
+    </div>
+  </div>
+
+  <!-- TASKS -->
+  <div id="panel-tasks" class="panel">
+    <div class="task-add-row">
+      <input id="task-input" type="text" placeholder="Add a task... (hit Enter)" onkeydown="if(event.key==='Enter')addTask()" />
+      <select id="task-cat">
+        <option>Declutter</option><option>Cleaning</option><option>Errands</option>
+        <option>Repairs</option><option>Grocery</option><option>Other</option>
+      </select>
+      <button class="btn primary" onclick="addTask()"><i class="ti ti-plus"></i>Add</button>
+    </div>
+    <div class="progress-wrap" id="progress-wrap" style="display:none">
+      <div class="progress-meta">
+        <span id="progress-label"></span>
+        <span id="progress-pct"></span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+    <div id="quick-section">
+      <div class="section-label">Quick starters — tap to add</div>
+      <div id="quick-chips"></div>
+    </div>
+    <div id="task-lists"></div>
+  </div>
+
+  <!-- MEXICAN SPOTS -->
+  <div id="panel-food" class="panel">
+    <div class="map-controls">
+      <div class="field-group" style="flex-direction:row;align-items:center;gap:8px">
+        <label>ZIP</label>
+        <input type="text" id="map-zip" placeholder="98402" value="98402" style="width:90px" />
+      </div>
+      <div class="field-group" style="flex-direction:row;align-items:center;gap:8px">
+        <label>Radius</label>
+        <select id="map-radius" style="width:120px">
+          <option value="2">2 miles</option>
+          <option value="5" selected>5 miles</option>
+          <option value="10">10 miles</option>
+          <option value="15">15 miles</option>
+          <option value="25">25 miles</option>
+        </select>
+      </div>
+      <div class="field-group" style="flex-direction:row;align-items:center;gap:8px">
+        <label>Search for</label>
+        <select id="map-query" style="width:180px">
+          <option value="Mexican restaurants">Mexican restaurants</option>
+          <option value="taquerias">Taquerías</option>
+          <option value="Mexican grocery stores mercado">Mexican grocery / mercado</option>
+          <option value="Mexican food trucks">Mexican food trucks</option>
+          <option value="carnicerias Mexican butcher">Carnicerías</option>
+          <option value="Mexican bakery panaderia">Panaderías / bakeries</option>
+        </select>
+      </div>
+      <button class="btn primary" onclick="updateMap()"><i class="ti ti-map-search"></i>Search</button>
+    </div>
+
+    <div class="map-frame">
+      <iframe id="gmap" allowfullscreen loading="lazy"
+        src="https://www.google.com/maps/search/Mexican+restaurants+near+98402+Tacoma+WA/@47.2529,-122.4443,13z"></iframe>
+    </div>
+
+    <div class="spots-add">
+      <div class="spots-add-title"><i class="ti ti-bookmark" style="vertical-align:-2px;margin-right:5px"></i>Save a spot from the map</div>
+      <div class="spots-add-grid">
+        <div class="field-group">
+          <label>Name</label>
+          <input id="s-name" type="text" placeholder="La Fondita..." />
+        </div>
+        <div class="field-group">
+          <label>Address</label>
+          <input id="s-addr" type="text" placeholder="1234 Pacific Ave, Tacoma..." />
+        </div>
+        <div class="field-group">
+          <label>ZIP code</label>
+          <input id="s-zip" type="text" placeholder="98402" />
+        </div>
+        <div class="field-group">
+          <label>Type</label>
+          <select id="s-type">
+            <option>Restaurant</option><option>Taqueria</option>
+            <option>Grocery / mercado</option><option>Bakery / panadería</option>
+            <option>Food truck</option><option>Carnicería</option><option>Bar / cantina</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group" style="margin-bottom:10px">
+        <label>What's good here — your note</label>
+        <input id="s-note" type="text" placeholder="Best birria in Tacoma, always get the consommé..." />
+      </div>
+      <div class="field-group" style="margin-bottom:12px">
+        <label>Paste a Google review (shows on hover)</label>
+        <textarea id="s-review" placeholder="Paste any review here — it'll pop up when you hover the card..."></textarea>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div class="field-group" style="flex-direction:row;align-items:center;gap:6px">
+          <label>Your rating</label>
+          <div class="stars-pick" id="star-pick">
+            <button onclick="setStar(1)">★</button><button onclick="setStar(2)">★</button>
+            <button onclick="setStar(3)">★</button><button onclick="setStar(4)">★</button>
+            <button onclick="setStar(5)">★</button>
+          </div>
+        </div>
+        <button class="btn primary" onclick="addSpot()"><i class="ti ti-plus"></i>Save spot</button>
+      </div>
+    </div>
+
+    <div class="sort-row">
+      <label>Sort by</label>
+      <select onchange="setSortAndRender(this.value)">
+        <option value="added">Recently added</option>
+        <option value="rating">Rating</option>
+        <option value="zip">ZIP code</option>
+        <option value="name">Name A–Z</option>
+        <option value="fav">Favorites first</option>
+      </select>
+    </div>
+
+    <div class="filter-row">
+      <button class="chip active" onclick="setFilter('All',this)">All</button>
+      <button class="chip" onclick="setFilter('Restaurant',this)">Restaurants</button>
+      <button class="chip" onclick="setFilter('Taqueria',this)">Taquerías</button>
+      <button class="chip" onclick="setFilter('Grocery / mercado',this)">Grocery</button>
+      <button class="chip" onclick="setFilter('Food truck',this)">Food trucks</button>
+      <button class="chip" onclick="setFilter('Carnicería',this)">Carnicerías</button>
+      <button class="chip" onclick="setFilter('FAV',this)"><i class="ti ti-star" style="font-size:11px;vertical-align:-1px"></i> Favorites</button>
+    </div>
+
+    <div id="spots-list"></div>
+    <div id="spots-empty" class="empty-state">
+      <i class="ti ti-map-pin"></i>
+      Search the map above, then save your favorites here.<br>Hover a saved card to see the review.
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* UTILS */
+function toast(msg, dur) {
+  dur = dur || 2000;
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(function(){ t.classList.remove('show'); }, dur);
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  var target = document.querySelector('.tab[data-tab="' + name + '"]');
+  if (target) target.classList.add('active');
+  var panel = document.getElementById('panel-' + name);
+  if (panel) panel.classList.add('active');
+}
+
+function save(key, val) { try { localStorage.setItem('jenhub_' + key, JSON.stringify(val)); } catch(e){} }
+function load(key, def) { try { var v = localStorage.getItem('jenhub_' + key); return v !== null ? JSON.parse(v) : def; } catch(e){ return def; } }
+
+/* CALL OUT */
+function buildScript() {
+  var name   = document.getElementById('co-name').value.trim();
+  var sup    = document.getElementById('co-sup').value.trim();
+  var reason = document.getElementById('co-reason').value;
+  var ret    = document.getElementById('co-return').value;
+  var extra  = document.getElementById('co-extra').value.trim();
+
+  var isBig  = reason === 'IDFFLTGTW';
+  var isGone = ret === 'NOPE';
+
+  var lines = [];
+  lines.push(sup ? 'Hi ' + sup + ',' : 'Hi,');
+  lines.push('');
+
+  if (isBig) {
+    lines.push("I won't be coming in today.");
+  } else {
+    lines.push("I'm reaching out to let you know I won't be able to come in today — I'm dealing with " + reason + ".");
+  }
+
+  if (isGone) {
+    lines.push('');
+    lines.push("Also — this is my two-weeks-ago notice. I actually don't even work there anymore.");
+  } else {
+    lines.push('I expect to be back ' + ret + '.');
+  }
+
+  if (extra) { lines.push(''); lines.push(extra); }
+
+  if (!isGone) {
+    lines.push('');
+    lines.push('I apologize for any inconvenience and will make sure things are covered.');
+  }
+
+  if (name) { lines.push(''); lines.push('— ' + name); }
+
+  document.getElementById('script-preview').textContent = lines.join('\n');
+}
+
+function getScriptText() { return document.getElementById('script-preview').textContent; }
+
+function copyScript() {
+  navigator.clipboard.writeText(getScriptText()).then(function(){ toast('Copied to clipboard!'); });
+}
+
+function shareScript() {
+  var text = getScriptText();
+  if (navigator.share) { navigator.share({ text: text }).catch(function(){}); }
+  else { navigator.clipboard.writeText(text).then(function(){ toast('Copied — paste into Notes!'); }); }
+}
+
+function textScript() {
+  window.location.href = 'sms:?body=' + encodeURIComponent(getScriptText());
+}
+
+buildScript();
+
+/* TASKS */
+var tasks = load('tasks', []);
+
+var QUICK = [
+  { text: 'Declutter junk drawer', cat: 'Declutter' },
+  { text: 'Clean out fridge', cat: 'Cleaning' },
+  { text: 'Wipe down counters', cat: 'Cleaning' },
+  { text: 'Donate old clothes', cat: 'Declutter' },
+  { text: 'Organize linen closet', cat: 'Declutter' },
+  { text: 'Take out trash / recycling', cat: 'Errands' },
+  { text: 'Deep clean bathroom', cat: 'Cleaning' },
+  { text: 'Sweep / vacuum floors', cat: 'Cleaning' },
+  { text: 'Organize pantry', cat: 'Declutter' },
+  { text: 'Check / replace light bulbs', cat: 'Repairs' },
+  { text: 'Wipe baseboards', cat: 'Cleaning' },
+  { text: 'Clear out car', cat: 'Errands' },
+];
+
+(function renderQuickChips() {
+  document.getElementById('quick-chips').innerHTML = QUICK.map(function(q, i){
+    return '<button class="quick-chip" onclick="addQuick(' + i + ')"><i class="ti ti-plus"></i>' + q.text + '</button>';
+  }).join('');
+})();
+
+function addQuick(i) {
+  tasks.unshift({ id: Date.now(), text: QUICK[i].text, cat: QUICK[i].cat, done: false });
+  save('tasks', tasks); renderTasks();
+}
+
+function addTask() {
+  var val = document.getElementById('task-input').value.trim();
+  var cat = document.getElementById('task-cat').value;
+  if (!val) return;
+  tasks.unshift({ id: Date.now(), text: val, cat: cat, done: false });
+  document.getElementById('task-input').value = '';
+  save('tasks', tasks); renderTasks();
+}
+
+function toggleTask(id) {
+  var t = tasks.find(function(x){ return x.id === id; });
+  if (t) t.done = !t.done;
+  save('tasks', tasks); renderTasks();
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter(function(x){ return x.id !== id; });
+  save('tasks', tasks); renderTasks();
+}
+
+function renderTasks() {
+  var todo = tasks.filter(function(t){ return !t.done; });
+  var done = tasks.filter(function(t){ return t.done; });
+  var total = tasks.length;
+  var pct = total ? Math.round(done.length / total * 100) : 0;
+
+  var pw = document.getElementById('progress-wrap');
+  pw.style.display = total ? 'block' : 'none';
+  if (total) {
+    document.getElementById('progress-label').textContent = done.length + ' of ' + total + ' complete';
+    document.getElementById('progress-pct').textContent = pct + '%';
+    document.getElementById('progress-fill').style.width = pct + '%';
+  }
+
+  document.getElementById('quick-section').style.display = tasks.length ? 'none' : 'block';
+
+  function makeItem(t) {
+    return '<div class="task-item">' +
+      '<input type="checkbox" ' + (t.done ? 'checked' : '') + ' onchange="toggleTask(' + t.id + ')" />' +
+      '<span class="task-text ' + (t.done ? 'done' : '') + '">' + t.text + '</span>' +
+      '<span class="task-cat">' + t.cat + '</span>' +
+      '<button class="task-del" onclick="deleteTask(' + t.id + ')"><i class="ti ti-trash"></i></button>' +
+      '</div>';
+  }
+
+  document.getElementById('task-lists').innerHTML =
+    (todo.length ? '<div class="section-label">To do</div>' + todo.map(makeItem).join('') : '') +
+    (done.length ? '<div class="section-label" style="margin-top:1.2rem">Done</div>' + done.map(makeItem).join('') : '');
+}
+
+renderTasks();
+
+/* MEXICAN SPOTS */
+var spots = load('spots', []);
+var spotStars = 0;
+var spotFilter = 'All';
+var spotSort = 'added';
+
+var ZIP_COORDS = {
+  '98402':[47.2529,-122.4443],'98403':[47.260,-122.438],'98404':[47.230,-122.412],
+  '98405':[47.259,-122.462],'98406':[47.265,-122.488],'98407':[47.282,-122.501],
+  '98408':[47.216,-122.444],'98409':[47.223,-122.465],'98418':[47.232,-122.433],
+  '98421':[47.267,-122.408],'98422':[47.289,-122.388],'98424':[47.238,-122.365],
+  '98444':[47.176,-122.446],'98445':[47.170,-122.420],'98446':[47.164,-122.396],
+  '98447':[47.160,-122.438],'98465':[47.260,-122.526],'98466':[47.250,-122.540],
+  '98467':[47.232,-122.538],
+};
+
+function getCoords(zip) { return ZIP_COORDS[zip] || [47.2529,-122.4443]; }
+
+function updateMap() {
+  var zip    = document.getElementById('map-zip').value.trim() || '98402';
+  var radius = parseInt(document.getElementById('map-radius').value);
+  var query  = document.getElementById('map-query').value;
+  var zoom   = radius <= 2 ? 15 : radius <= 5 ? 14 : radius <= 10 ? 13 : radius <= 15 ? 12 : 11;
+  var coords = getCoords(zip);
+  var lat = coords[0], lng = coords[1];
+  var encoded = encodeURIComponent(query + ' near ' + zip + ' Tacoma WA');
+  document.getElementById('gmap').src =
+    'https://www.google.com/maps/search/' + encoded + '/@' + lat + ',' + lng + ',' + zoom + 'z';
+  toast('Searching ' + radius + '-mile area around ' + zip);
+  recomputeDistances();
+}
+
+function distMiles(lat1, lng1, lat2, lng2) {
+  var R = 3958.8, dLat = (lat2-lat1)*Math.PI/180, dLng = (lng2-lng1)*Math.PI/180;
+  var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function recomputeDistances() {
+  var zip    = document.getElementById('map-zip').value.trim() || '98402';
+  var radius = parseFloat(document.getElementById('map-radius').value);
+  var center = getCoords(zip);
+  spots = spots.map(function(s){
+    var sc = getCoords(s.zip || '98402');
+    s._dist = distMiles(center[0], center[1], sc[0], sc[1]);
+    s._out  = s._dist > radius;
+    return s;
+  });
+  renderSpots();
+}
+
+function setStar(n) {
+  spotStars = n;
+  document.querySelectorAll('#star-pick button').forEach(function(b, i){
+    b.classList.toggle('lit', i < n);
+  });
+}
+
+function addSpot() {
+  var name = document.getElementById('s-name').value.trim();
+  if (!name) { toast('Add at least a name!'); return; }
+  var spot = {
+    id: Date.now(), added: Date.now(),
+    name: name,
+    addr: document.getElementById('s-addr').value.trim(),
+    zip:  document.getElementById('s-zip').value.trim() || '98402',
+    type: document.getElementById('s-type').value,
+    note: document.getElementById('s-note').value.trim(),
+    review: document.getElementById('s-review').value.trim(),
+    stars: spotStars || 3,
+    fav: false,
+  };
+  spots.unshift(spot);
+  save('spots', spots);
+  ['s-name','s-addr','s-zip','s-note','s-review'].forEach(function(id){ document.getElementById(id).value=''; });
+  setStar(0);
+  recomputeDistances();
+  toast('"' + name + '" saved!');
+}
+
+function toggleFav(id) {
+  var s = spots.find(function(x){ return x.id===id; });
+  if (s) s.fav = !s.fav;
+  save('spots', spots); renderSpots();
+}
+
+function deleteSpot(id) {
+  spots = spots.filter(function(x){ return x.id!==id; });
+  save('spots', spots); renderSpots();
+}
+
+function copySpot(id) {
+  var s = spots.find(function(x){ return x.id===id; });
+  if (!s) return;
+  var stars = '★'.repeat(s.stars) + '☆'.repeat(5-s.stars);
+  var lines = [s.name];
+  if (s.type) lines.push(s.type);
+  if (s.addr) lines.push(s.addr);
+  if (s.zip)  lines.push('Tacoma, WA ' + s.zip);
+  lines.push(stars);
+  if (s.note) lines.push('\n' + s.note);
+  if (s.review) lines.push('\n"' + s.review + '"');
+  var text = lines.join('\n');
+  if (navigator.share) {
+    navigator.share({ text: text }).catch(function(){ fallbackCopy(text); });
+  } else { fallbackCopy(text); }
+}
+
+function fallbackCopy(text) {
+  navigator.clipboard.writeText(text).then(function(){ toast('Copied — paste anywhere!'); });
+}
+
+function setFilter(f, btn) {
+  spotFilter = f;
+  document.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+  btn.classList.add('active');
+  renderSpots();
+}
+
+function setSortAndRender(val) { spotSort = val; renderSpots(); }
+
+function renderSpots() {
+  var list = spots.slice();
+
+  if (spotFilter === 'FAV') list = list.filter(function(s){ return s.fav; });
+  else if (spotFilter !== 'All') list = list.filter(function(s){ return s.type === spotFilter; });
+
+  list = list.filter(function(s){ return !s._out; });
+
+  if (spotSort === 'rating') list.sort(function(a,b){ return b.stars-a.stars; });
+  else if (spotSort === 'zip') list.sort(function(a,b){ return (a.zip||'').localeCompare(b.zip||''); });
+  else if (spotSort === 'name') list.sort(function(a,b){ return a.name.localeCompare(b.name); });
+  else if (spotSort === 'fav') list.sort(function(a,b){ return (b.fav?1:0)-(a.fav?1:0); });
+  else list.sort(function(a,b){ return b.added-a.added; });
+
+  var empty = document.getElementById('spots-empty');
+  var container = document.getElementById('spots-list');
+
+  if (!list.length) { empty.style.display='block'; container.innerHTML=''; return; }
+  empty.style.display = 'none';
+
+  container.innerHTML = list.map(function(s){
+    var stars = '★'.repeat(s.stars) + '☆'.repeat(5-s.stars);
+    return '<div class="place-card ' + (s.fav?'fav':'') + '">' +
+      '<div class="place-top">' +
+        '<span class="place-name">' + s.name + '</span>' +
+        '<span class="place-type-badge">' + s.type + '</span>' +
+      '</div>' +
+      '<div class="place-meta">' +
+        (s.addr ? '<span class="place-addr"><i class="ti ti-map-pin" style="font-size:11px;vertical-align:-1px;margin-right:2px"></i>' + s.addr + '</span>' : '') +
+        (s.zip  ? '<span class="place-zip">ZIP ' + s.zip + '</span>' : '') +
+        '<span class="stars-display">' + stars + '</span>' +
+      '</div>' +
+      (s.note ? '<div class="place-note">' + s.note + '</div>' : '') +
+      (s.review ? '<div class="review-preview"><i class="ti ti-quote" style="font-size:12px;margin-right:4px;vertical-align:-1px"></i>' + s.review + '</div>' : '') +
+      '<div class="place-bottom">' +
+        '<button class="copy-card-btn" onclick="copySpot(' + s.id + ')"><i class="ti ti-share"></i>Copy / share</button>' +
+        '<div class="place-actions">' +
+          '<button class="icon-btn fav-btn ' + (s.fav?'lit':'') + '" onclick="toggleFav(' + s.id + ')" title="' + (s.fav?'Unfavorite':'Favorite') + '">' +
+            '<i class="ti ti-star' + (s.fav?'-filled':'') + '"></i>' +
+          '</button>' +
+          '<button class="icon-btn del-btn" onclick="deleteSpot(' + s.id + ')" title="Remove"><i class="ti ti-trash"></i></button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+renderSpots();
+</script>
+</body>
+</html>
+<!-- TETRIS TAB INJECTED -->
+<script>
+(function injectTetrisTab() {
+  // Add tab button
+  var tabs = document.querySelector('.tabs');
+  var btn = document.createElement('button');
+  btn.className = 'tab';
+  btn.setAttribute('data-tab', 'tetris');
+  btn.innerHTML = '<i class="ti ti-device-gamepad-2"></i>Tetris';
+  btn.onclick = function(){ switchTab('tetris'); };
+  tabs.appendChild(btn);
+
+  // Add panel
+  var panel = document.createElement('div');
+  panel.id = 'panel-tetris';
+  panel.className = 'panel';
+  panel.innerHTML = `
+<style>
+  #tetris-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    padding-bottom: 1rem;
+  }
+  #tetris-topbar {
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 4px;
+    font-size: 13px;
+    color: var(--text2);
+    font-weight: 500;
+  }
+  #tetris-topbar span { font-size: 18px; font-weight: 500; color: var(--text); }
+  #tetris-canvas-wrap {
+    background: #0a0a0f;
+    border-radius: 6px;
+    border: 2px solid #333;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px #222;
+  }
+  #tetris-canvas { display: block; }
+  #tetris-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.78);
+    border-radius: 4px;
+    gap: 10px;
+  }
+  #tetris-overlay-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: #fff;
+    letter-spacing: 2px;
+  }
+  #tetris-overlay-sub { font-size: 13px; color: #aaa; }
+  .t-start-btn {
+    margin-top: 8px;
+    padding: 10px 28px;
+    border-radius: 99px;
+    border: 1.5px solid #fff;
+    background: none;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .t-start-btn:hover, .t-start-btn:active { background: rgba(255,255,255,0.15); }
+
+  .song-btn {
+    padding: 7px 14px;
+    border-radius: 99px;
+    border: 1px solid #555;
+    background: rgba(255,255,255,0.05);
+    color: #ccc;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .song-btn.selected {
+    background: #fff;
+    color: #111;
+    border-color: #fff;
+  }
+  .song-btn:active { transform: scale(0.95); }
+
+  /* Mobile portrait: keep everything visible, no horizontal scroll */
+  #tetris-canvas { max-width: 100%; height: auto; touch-action: manipulation; }
+
+  @media (max-width: 480px) {
+    #tetris-wrap { gap: 4px; }
+    #tetris-topbar { max-width: 280px; font-size: 12px; padding: 6px 2px; }
+    #tetris-topbar span { font-size: 17px; }
+    #tetris-next-wrap { max-width: 280px; }
+    #tetris-controls { max-width: 320px; margin-top: 8px; }
+    .dpad-btn { width: 54px; height: 54px; font-size: 20px; }
+    .dpad-btn.action { width: 50px; height: 50px; }
+    .dpad-btn.wide { height: 42px; }
+    #tetris-overlay-title { font-size: 22px; }
+    .song-btn { font-size: 10px; padding: 6px 11px; }
+  }
+
+  @media (max-width: 380px) {
+    #tetris-canvas-wrap { transform: scale(0.92); }
+    .dpad-btn { width: 50px; height: 50px; }
+    .dpad-btn.action { width: 46px; height: 46px; }
+  }
+
+  /* NEXT PIECE */
+  #tetris-next-wrap {
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px 2px;
+    font-size: 11px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  #tetris-next-canvas { background: #0a0a0f; border-radius: 4px; border: 1px solid #333; }
+
+  /* DPAD */
+  #tetris-controls {
+    width: 100%;
+    max-width: 320px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 0;
+    margin-top: 12px;
+    align-items: center;
+    justify-items: center;
+  }
+  .dpad-btn {
+    width: 58px; height: 58px;
+    border-radius: 10px;
+    border: 1.5px solid #444;
+    background: #1a1a1f;
+    color: #ccc;
+    font-size: 22px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: background 0.08s, transform 0.06s;
+    active-scale: 0.92;
+  }
+  .dpad-btn:active { background: #2e2e3a; transform: scale(0.92); }
+  .dpad-btn.wide { width: 100%; max-width: 160px; height: 44px; font-size: 13px; font-family: 'DM Sans', sans-serif; font-weight: 500; letter-spacing: 0.3px; }
+  .dpad-btn.action { border-radius: 50%; background: #1e1e2e; border-color: #5555aa; color: #aaaaff; font-size: 12px; font-family: 'DM Sans', sans-serif; font-weight: 500; width: 52px; height: 52px; }
+  .dpad-btn.action.a { background: #1e2e1e; border-color: #55aa55; color: #aaffaa; }
+  #ctrl-row-top    { grid-column: 1/4; display: flex; justify-content: center; gap: 8px; margin-bottom: 6px; }
+  #ctrl-row-mid    { grid-column: 1/4; display: flex; justify-content: space-between; align-items: center; width: 100%; }
+  #ctrl-row-bot    { grid-column: 1/4; display: flex; justify-content: center; margin-top: 6px; }
+  #ctrl-dpad-mid   { display: flex; gap: 6px; align-items: center; }
+  #ctrl-actions    { display: flex; gap: 10px; align-items: center; flex-direction: column; }
+  #ctrl-pause-wrap { display: flex; align-items: center; }
+</style>
+<div id="tetris-wrap">
+  <div id="tetris-topbar">
+    <div>Score<br><span id="t-score">0</span></div>
+    <div style="text-align:center">Lines<br><span id="t-lines">0</span></div>
+    <div style="text-align:right">Level<br><span id="t-level">1</span></div>
+  </div>
+
+  <div style="position:relative" id="tetris-canvas-wrap">
+    <canvas id="tetris-canvas" width="200" height="400"></canvas>
+    <div id="tetris-overlay">
+      <div id="tetris-overlay-title">TETRIS</div>
+      <div id="tetris-overlay-sub">Tacoma edition</div>
+      <div id="song-picker" style="display:flex;gap:8px;margin-top:4px">
+        <button class="song-btn selected" data-song="korobeiniki" onclick="pickSong('korobeiniki')">Korobeiniki</button>
+        <button class="song-btn" data-song="sugarplum" onclick="pickSong('sugarplum')">Sugar Plum Fairy</button>
+      </div>
+      <button class="t-start-btn" id="t-start-btn" onclick="tetrisStart()">Start game</button>
+    </div>
+  </div>
+
+  <div id="tetris-next-wrap">
+    Next <canvas id="tetris-next-canvas" width="64" height="64"></canvas>
+  </div>
+
+  <div id="tetris-controls">
+    <div id="ctrl-row-top">
+      <div style="width:58px"></div>
+    </div>
+    <div id="ctrl-row-mid">
+      <div id="ctrl-dpad-mid">
+        <button class="dpad-btn" id="btn-left"  ontouchstart="tBtn('left',1)"  ontouchend="tBtn('left',0)"  onmousedown="tBtn('left',1)"  onmouseup="tBtn('left',0)">&#8592;</button>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="dpad-btn" id="btn-up"   ontouchstart="tBtn('up',1)"   ontouchend="tBtn('up',0)"   onmousedown="tBtn('up',1)"   onmouseup="tBtn('up',0)">&#8593;</button>
+          <button class="dpad-btn" id="btn-down"  ontouchstart="tBtn('down',1)"  ontouchend="tBtn('down',0)"  onmousedown="tBtn('down',1)"  onmouseup="tBtn('down',0)">&#8595;</button>
+        </div>
+        <button class="dpad-btn" id="btn-right" ontouchstart="tBtn('right',1)" ontouchend="tBtn('right',0)" onmousedown="tBtn('right',1)" onmouseup="tBtn('right',0)">&#8594;</button>
+      </div>
+      <div id="ctrl-pause-wrap">
+        <button class="dpad-btn wide" onclick="tetrisPauseToggle()">&#9646;&#9646; Pause</button>
+      </div>
+      <div id="ctrl-actions">
+        <button class="dpad-btn action" ontouchstart="tBtn('b',1)" ontouchend="tBtn('b',0)" onmousedown="tBtn('b',1)" onmouseup="tBtn('b',0)">B</button>
+        <button class="dpad-btn action a" ontouchstart="tBtn('a',1)" ontouchend="tBtn('a',0)" onmousedown="tBtn('a',1)" onmouseup="tBtn('a',0)">A</button>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+  document.querySelector('.app').appendChild(panel);
+})();
+</script>
+
+<script>
+/* ═══════════════════════════════════════════
+   TETRIS ENGINE + AUDIO
+═══════════════════════════════════════════ */
+(function(){
+
+/* ── AUDIO: multi-song polyphonic engine ── */
+var _ac = null;
+function getAC() {
+  if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+  return _ac;
+}
+
+function noteFreq(n) {
+  if (n === null || n === 'r') return 0;
+  var NOTES = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
+  var m = n.match(/^([A-G]#?b?)(\d)$/);
+  if (!m) return 0;
+  var semi = NOTES[m[1]];
+  var oct  = parseInt(m[2]);
+  return 440 * Math.pow(2, (oct*12 + semi - 69) / 12);
+}
+
+/* ──────────────────────────────────────────
+   SONG 1: KOROBEINIKI (Tetris A-theme)
+   melody / harmony / bass — all in beats
+────────────────────────────────────────── */
+var KOROBEINIKI = {
+  bpm: 150,
+  melody: [
+    ['E5',1],['B4',0.5],['C5',0.5],['D5',1],['C5',0.5],['B4',0.5],
+    ['A4',1],['A4',0.5],['C5',0.5],['E5',1],['D5',0.5],['C5',0.5],
+    ['B4',1.5],['C5',0.5],['D5',1],['E5',1],
+    ['C5',1],['A4',1],['A4',2],
+    ['D5',1.5],['F5',0.5],['A5',1],['G5',0.5],['F5',0.5],
+    ['E5',1.5],['C5',0.5],['E5',1],['D5',0.5],['C5',0.5],
+    ['B4',1],['B4',0.5],['C5',0.5],['D5',1],['E5',1],
+    ['C5',1],['A4',1],['A4',2],
+  ],
+  harmony: [
+    ['G4',1],['G4',1],['G4',1],['G4',1],
+    ['E4',1],['E4',1],['E4',1],['E4',1],
+    ['G4',2],['G4',2],
+    ['E4',2],['E4',2],
+    ['F4',2],['F4',2],
+    ['G4',2],['G4',2],
+    ['G4',1],['G4',1],['G4',1],['G4',1],
+    ['E4',2],['E4',2],
+  ],
+  bass: [
+    ['A2',1],['E3',1],['A2',1],['E3',1],
+    ['A2',1],['E3',1],['A2',1],['E3',1],
+    ['A2',1],['E3',1],['A2',1],['E3',1],
+    ['A2',1],['E3',1],['A2',1],['E3',1],
+    ['D3',1],['A3',1],['D3',1],['A3',1],
+    ['C3',1],['G3',1],['C3',1],['G3',1],
+    ['E3',1],['B3',1],['E3',1],['B3',1],
+    ['A2',1],['E3',1],['A2',1],['E3',1],
+  ],
+};
+
+/* ──────────────────────────────────────────
+   SONG 2: DANCE OF THE SUGAR PLUM FAIRY (Tetris B-theme)
+   Tchaikovsky — celesta line + counterpoint + plucked bass
+────────────────────────────────────────── */
+var SUGAR_PLUM = {
+  bpm: 132,
+  melody: [
+    ['E5',0.5],['D#5',0.5],['E5',0.5],['B4',0.5],['D5',0.5],['C5',0.5],['A4',1],
+    ['C4',0.5],['E4',0.5],['A4',0.5],['B4',1.5],
+    ['E4',0.5],['G#4',0.5],['B4',0.5],['C5',1.5],
+    ['E5',0.5],['D#5',0.5],['E5',0.5],['B4',0.5],['D5',0.5],['C5',0.5],['A4',1],
+    ['C4',0.5],['E4',0.5],['A4',0.5],['B4',0.5],['E4',0.5],['C5',0.5],['B4',0.5],['A4',1],
+    ['B4',0.5],['C5',0.5],['D5',0.5],['E5',0.5],['F5',0.5],['G5',0.5],['A5',1],
+    ['G#5',0.5],['F5',0.5],['E5',0.5],['D5',0.5],['C5',0.5],['B4',0.5],['A4',1.5],
+    ['E5',0.5],['F5',0.5],['E5',0.5],['D5',0.5],['C5',0.5],['B4',0.5],['A4',1.5],
+  ],
+  harmony: [
+    ['C4',2],['A3',2],
+    ['A3',2],['G#3',2],
+    ['G#3',2],['A3',2],
+    ['C4',2],['A3',2],
+    ['A3',2],['G#3',2],
+    ['A3',1],['B3',1],['C4',2],
+    ['B3',2],['A3',2],
+    ['G#3',2],['A3',2],
+  ],
+  bass: [
+    ['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],
+    ['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],['G#2',0.5],['r',0.5],['E3',0.5],['r',0.5],
+    ['G#2',0.5],['r',0.5],['E3',0.5],['r',0.5],['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],
+    ['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],
+    ['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],['G#2',0.5],['r',0.5],['E3',0.5],['r',0.5],
+    ['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],
+    ['E2',0.5],['r',0.5],['B2',0.5],['r',0.5],['E2',0.5],['r',0.5],['B2',0.5],['r',0.5],
+    ['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],
+  ],
+};
+
+var SONGS = { korobeiniki: KOROBEINIKI, sugarplum: SUGAR_PLUM };
+var currentSong = 'korobeiniki';
+var _audioRunning = false;
+var _voiceTimers = { m: null, h: null, b: null };
+
+function playVoice(voice, seq, idx, bpm, oscType, vol, releaseRatio) {
+  if (!_audioRunning) return;
+  idx = idx % seq.length;
+  var ac = getAC();
+  var beat = 60 / bpm;
+  var note = seq[idx];
+  var freq = noteFreq(note[0]);
+  var dur  = note[1] * beat;
+
+  if (freq > 0) {
+    var osc = ac.createOscillator();
+    var gain = ac.createGain();
+    osc.type = oscType;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, ac.currentTime);
+    gain.gain.linearRampToValueAtTime(vol, ac.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur * releaseRatio);
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.start();
+    osc.stop(ac.currentTime + dur * releaseRatio + 0.02);
+  }
+
+  _voiceTimers[voice] = setTimeout(function(){
+    playVoice(voice, seq, idx+1, bpm, oscType, vol, releaseRatio);
+  }, dur * 1000);
+}
+
+function startMusic() {
+  _audioRunning = true;
+  var ac = getAC();
+  if (ac.state === 'suspended') ac.resume();
+  var song = SONGS[currentSong];
+  if (currentSong === 'sugarplum') {
+    playVoice('m', song.melody,  0, song.bpm, 'triangle', 0.18, 0.85);
+    playVoice('h', song.harmony, 0, song.bpm, 'sine',     0.09, 0.9);
+    playVoice('b', song.bass,    0, song.bpm, 'triangle', 0.14, 0.6);
+  } else {
+    playVoice('m', song.melody,  0, song.bpm, 'square',   0.11, 0.92);
+    playVoice('h', song.harmony, 0, song.bpm, 'square',   0.06, 0.92);
+    playVoice('b', song.bass,    0, song.bpm, 'triangle', 0.13, 0.85);
+  }
+}
+
+function stopMusic() {
+  _audioRunning = false;
+  clearTimeout(_voiceTimers.m);
+  clearTimeout(_voiceTimers.h);
+  clearTimeout(_voiceTimers.b);
+}
+
+function pauseMusic() { stopMusic(); }
+function resumeMusic() { startMusic(); }
+
+/* ── TETRIS GAME ── */
+var COLS = 10, ROWS = 20, SZ = 20;
+var COLORS = ['#00f0f0','#f0a000','#a000f0','#00f000','#f00000','#0000f0','#f0f000'];
+
+var PIECES = [
+  [[1,1,1,1]],                        // I
+  [[1,1],[1,1]],                      // O
+  [[0,1,0],[1,1,1]],                  // T
+  [[1,0],[1,0],[1,1]],                // L
+  [[0,1],[0,1],[1,1]],                // J
+  [[0,1,1],[1,1,0]],                  // S
+  [[1,1,0],[0,1,1]],                  // Z
+];
+
+var board, piece, pieceX, pieceY, pieceType, nextType;
+var score, lines, level, gameOver, paused, running;
+var dropInterval, dropTimer;
+var canvas, ctx, nextCanvas, nextCtx;
+var btnState = {};
+var repeatTimers = {};
+
+function tetrisInit() {
+  canvas     = document.getElementById('tetris-canvas');
+  ctx        = canvas.getContext('2d');
+  nextCanvas = document.getElementById('tetris-next-canvas');
+  nextCtx    = nextCanvas.getContext('2d');
+  canvas.width  = COLS * SZ;
+  canvas.height = ROWS * SZ;
+}
+
+window.pickSong = function(name) {
+  currentSong = name;
+  document.querySelectorAll('.song-btn').forEach(function(b){
+    b.classList.toggle('selected', b.getAttribute('data-song') === name);
+  });
+};
+
+window.tetrisStart = function() {
+  tetrisInit();
+  board = Array.from({length: ROWS}, function(){ return new Array(COLS).fill(0); });
+  score = 0; lines = 0; level = 1; gameOver = false; paused = false; running = true;
+  nextType = Math.floor(Math.random() * PIECES.length);
+  spawnPiece();
+  updateHUD();
+  document.getElementById('tetris-overlay').style.display = 'none';
+  clearInterval(dropTimer);
+  dropInterval = 700;
+  dropTimer = setInterval(tick, dropInterval);
+  startMusic();
+};
+
+window.tetrisPauseToggle = function() {
+  if (!running) return;
+  paused = !paused;
+  var btn = document.querySelector('#ctrl-pause-wrap .dpad-btn');
+  if (paused) {
+    stopMusic();
+    btn.innerHTML = '&#9654; Resume';
+    clearInterval(dropTimer);
+  } else {
+    resumeMusic();
+    btn.innerHTML = '&#9646;&#9646; Pause';
+    dropTimer = setInterval(tick, dropInterval);
+  }
+};
+
+function spawnPiece() {
+  pieceType = nextType;
+  nextType  = Math.floor(Math.random() * PIECES.length);
+  piece = PIECES[pieceType].map(function(r){ return r.slice(); });
+  pieceX = Math.floor((COLS - piece[0].length) / 2);
+  pieceY = 0;
+  if (collides(piece, pieceX, pieceY)) { endGame(); }
+  drawNext();
+}
+
+function tick() {
+  if (paused || gameOver) return;
+  if (!collides(piece, pieceX, pieceY + 1)) {
+    pieceY++;
+  } else {
+    lock();
+    clearLines();
+    spawnPiece();
+  }
+  draw();
+}
+
+function collides(p, ox, oy) {
+  for (var r = 0; r < p.length; r++) {
+    for (var c = 0; c < p[r].length; c++) {
+      if (!p[r][c]) continue;
+      var nx = ox + c, ny = oy + r;
+      if (nx < 0 || nx >= COLS || ny >= ROWS) return true;
+      if (ny >= 0 && board[ny][nx]) return true;
+    }
+  }
+  return false;
+}
+
+function lock() {
+  piece.forEach(function(row, r){
+    row.forEach(function(v, c){
+      if (v) board[pieceY+r][pieceX+c] = pieceType + 1;
+    });
+  });
+}
+
+function clearLines() {
+  var cleared = 0;
+  for (var r = ROWS-1; r >= 0; r--) {
+    if (board[r].every(function(v){ return v; })) {
+      board.splice(r,1);
+      board.unshift(new Array(COLS).fill(0));
+      cleared++; r++;
+    }
+  }
+  if (cleared) {
+    var pts = [0, 40, 100, 300, 1200][cleared] * (level);
+    score += pts; lines += cleared;
+    var newLevel = Math.floor(lines / 10) + 1;
+    if (newLevel > level) {
+      level = newLevel;
+      dropInterval = Math.max(100, 700 - (level-1)*60);
+      clearInterval(dropTimer);
+      dropTimer = setInterval(tick, dropInterval);
+    }
+    updateHUD();
+  }
+}
+
+function rotate(p) {
+  var rows = p.length, cols = p[0].length;
+  var out = Array.from({length: cols}, function(){ return new Array(rows).fill(0); });
+  for (var r=0;r<rows;r++) for (var c=0;c<cols;c++) out[c][rows-1-r] = p[r][c];
+  return out;
+}
+
+function moveLeft()  { if (!collides(piece, pieceX-1, pieceY)) { pieceX--; draw(); } }
+function moveRight() { if (!collides(piece, pieceX+1, pieceY)) { pieceX++; draw(); } }
+function moveDown()  {
+  if (!collides(piece, pieceX, pieceY+1)) {
+    pieceY++;
+    score++;
+    updateHUD();
+    draw();
+  } else {
+    lock(); clearLines(); spawnPiece(); draw();
+  }
+}
+function rotateCW() {
+  var r = rotate(piece);
+  if (!collides(r, pieceX, pieceY)) { piece = r; }
+  else if (!collides(r, pieceX-1, pieceY)) { piece = r; pieceX--; }
+  else if (!collides(r, pieceX+1, pieceY)) { piece = r; pieceX++; }
+  draw();
+}
+function rotateCCW() {
+  var r = rotate(rotate(rotate(piece)));
+  if (!collides(r, pieceX, pieceY)) { piece = r; }
+  else if (!collides(r, pieceX-1, pieceY)) { piece = r; pieceX--; }
+  else if (!collides(r, pieceX+1, pieceY)) { piece = r; pieceX++; }
+  draw();
+}
+
+/* Button input → action mapping
+   D-pad: left/right = move, up = rotate, down = soft drop
+   A = hard drop, B = rotate
+*/
+window.tBtn = function(btn, down) {
+  if (!running || gameOver) return;
+  btnState[btn] = down;
+  clearInterval(repeatTimers[btn]);
+  if (!down) return;
+
+  function doAction() {
+    if (paused) return;
+    if (btn === 'left')  moveLeft();
+    if (btn === 'right') moveRight();
+    if (btn === 'down')  moveDown();
+    if (btn === 'a')     rotateCW();
+    if (btn === 'b')     rotateCCW();
+  }
+
+  doAction();
+  if (btn === 'left' || btn === 'right' || btn === 'down') {
+    repeatTimers[btn] = setInterval(function(){
+      if (btnState[btn]) doAction(); else clearInterval(repeatTimers[btn]);
+    }, 80);
+  }
+};
+
+// Keyboard support
+document.addEventListener('keydown', function(e){
+  if (!running || paused || gameOver) return;
+  if (e.key==='ArrowLeft')  { e.preventDefault(); moveLeft(); }
+  if (e.key==='ArrowRight') { e.preventDefault(); moveRight(); }
+  if (e.key==='ArrowDown')  { e.preventDefault(); moveDown(); }
+  if (e.key==='z' || e.key==='Z') { e.preventDefault(); rotateCCW(); }
+  if (e.key==='x' || e.key==='X') { e.preventDefault(); rotateCW(); }
+  if (e.key==='p' || e.key==='P') tetrisPauseToggle();
+});
+
+function ghostY() {
+  var gy = pieceY;
+  while (!collides(piece, pieceX, gy+1)) gy++;
+  return gy;
+}
+
+function draw() {
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 0.5;
+  for (var c=0;c<=COLS;c++) { ctx.beginPath(); ctx.moveTo(c*SZ,0); ctx.lineTo(c*SZ,ROWS*SZ); ctx.stroke(); }
+  for (var r=0;r<=ROWS;r++) { ctx.beginPath(); ctx.moveTo(0,r*SZ); ctx.lineTo(COLS*SZ,r*SZ); ctx.stroke(); }
+
+  // Board
+  board.forEach(function(row, r){
+    row.forEach(function(v, c){
+      if (v) drawCell(ctx, c, r, COLORS[v-1], 1);
+    });
+  });
+
+  // Ghost
+  var gy = ghostY();
+  piece.forEach(function(row, r){
+    row.forEach(function(v, c){
+      if (v) drawCell(ctx, pieceX+c, gy+r, COLORS[pieceType], 0.22);
+    });
+  });
+
+  // Active piece
+  piece.forEach(function(row, r){
+    row.forEach(function(v, c){
+      if (v) drawCell(ctx, pieceX+c, pieceY+r, COLORS[pieceType], 1);
+    });
+  });
+}
+
+function drawCell(c, x, y, color, alpha) {
+  c.globalAlpha = alpha;
+  c.fillStyle = color;
+  c.fillRect(x*SZ+1, y*SZ+1, SZ-2, SZ-2);
+  c.globalAlpha = alpha * 0.6;
+  c.fillStyle = '#fff';
+  c.fillRect(x*SZ+2, y*SZ+2, SZ-4, 3);
+  c.globalAlpha = 1;
+}
+
+function drawNext() {
+  nextCtx.fillStyle = '#0a0a0f';
+  nextCtx.fillRect(0,0,64,64);
+  var np = PIECES[nextType];
+  var offX = Math.floor((4 - np[0].length)/2);
+  var offY = Math.floor((4 - np.length)/2);
+  np.forEach(function(row,r){
+    row.forEach(function(v,c){
+      if (v) drawCell(nextCtx, offX+c, offY+r, COLORS[nextType], 1);
+    });
+  });
+}
+
+function updateHUD() {
+  document.getElementById('t-score').textContent = score.toLocaleString();
+  document.getElementById('t-lines').textContent = lines;
+  document.getElementById('t-level').textContent = level;
+}
+
+function endGame() {
+  gameOver = true; running = false;
+  clearInterval(dropTimer);
+  stopMusic();
+  var ov = document.getElementById('tetris-overlay');
+  ov.style.display = 'flex';
+  ov.querySelector('#tetris-overlay-title').textContent = 'GAME OVER';
+  ov.querySelector('#tetris-overlay-sub').textContent = 'Score: ' + score.toLocaleString();
+  ov.querySelector('#t-start-btn').textContent = 'Play again';
+}
+
+// Init canvas on load
+setTimeout(tetrisInit, 100);
+
+})();
+</script>
