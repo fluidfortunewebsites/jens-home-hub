@@ -956,9 +956,24 @@ renderSpots();
 
 /* ── AUDIO: multi-song polyphonic engine ── */
 var _ac = null;
+var _audioUnlocked = false;
+
 function getAC() {
   if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
   return _ac;
+}
+
+function unlockAudio() {
+  var ac = getAC();
+  if (ac.state === 'suspended') ac.resume();
+  if (!_audioUnlocked) {
+    var buf = ac.createBuffer(1, 1, 22050);
+    var src = ac.createBufferSource();
+    src.buffer = buf;
+    src.connect(ac.destination);
+    if (src.start) src.start(0); else src.noteOn(0);
+    _audioUnlocked = true;
+  }
 }
 
 function noteFreq(n) {
@@ -1136,6 +1151,7 @@ function tetrisInit() {
 }
 
 window.pickSong = function(name) {
+  unlockAudio();
   currentSong = name;
   document.querySelectorAll('.song-btn').forEach(function(b){
     b.classList.toggle('selected', b.getAttribute('data-song') === name);
@@ -1143,6 +1159,7 @@ window.pickSong = function(name) {
 };
 
 window.tetrisStart = function() {
+  unlockAudio();
   tetrisInit();
   board = Array.from({length: ROWS}, function(){ return new Array(COLS).fill(0); });
   score = 0; lines = 0; level = 1; gameOver = false; paused = false; running = true;
