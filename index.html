@@ -913,6 +913,8 @@ renderSpots();
         <button class="song-btn" data-song="sugarplum" onclick="pickSong('sugarplum')">Sugar Plum Fairy</button>
       </div>
       <button class="t-start-btn" id="t-start-btn" onclick="tetrisStart()">Start game</button>
+      <button class="song-btn" style="margin-top:6px" onclick="audioTest()">🔊 Test sound (sine tone)</button>
+      <div id="audio-status" style="font-size:10px;color:#888;margin-top:4px;max-width:260px;text-align:center;line-height:1.4">audio not yet started</div>
     </div>
   </div>
 
@@ -926,19 +928,19 @@ renderSpots();
     </div>
     <div id="ctrl-row-mid">
       <div id="ctrl-dpad-mid">
-        <button class="dpad-btn" id="btn-left"  ontouchstart="tBtn('left',1)"  ontouchend="tBtn('left',0)"  onmousedown="tBtn('left',1)"  onmouseup="tBtn('left',0)">&#8592;</button>
+        <button class="dpad-btn" id="btn-left"  data-btn="left">&#8592;</button>
         <div style="display:flex;flex-direction:column;gap:6px">
-          <button class="dpad-btn" id="btn-up"   ontouchstart="tBtn('up',1)"   ontouchend="tBtn('up',0)"   onmousedown="tBtn('up',1)"   onmouseup="tBtn('up',0)">&#8593;</button>
-          <button class="dpad-btn" id="btn-down"  ontouchstart="tBtn('down',1)"  ontouchend="tBtn('down',0)"  onmousedown="tBtn('down',1)"  onmouseup="tBtn('down',0)">&#8595;</button>
+          <button class="dpad-btn" id="btn-up"   data-btn="up">&#8593;</button>
+          <button class="dpad-btn" id="btn-down"  data-btn="down">&#8595;</button>
         </div>
-        <button class="dpad-btn" id="btn-right" ontouchstart="tBtn('right',1)" ontouchend="tBtn('right',0)" onmousedown="tBtn('right',1)" onmouseup="tBtn('right',0)">&#8594;</button>
+        <button class="dpad-btn" id="btn-right" data-btn="right">&#8594;</button>
       </div>
       <div id="ctrl-pause-wrap">
         <button class="dpad-btn wide" onclick="tetrisPauseToggle()">&#9646;&#9646; Pause</button>
       </div>
       <div id="ctrl-actions">
-        <button class="dpad-btn action" ontouchstart="tBtn('b',1)" ontouchend="tBtn('b',0)" onmousedown="tBtn('b',1)" onmouseup="tBtn('b',0)">B</button>
-        <button class="dpad-btn action a" ontouchstart="tBtn('a',1)" ontouchend="tBtn('a',0)" onmousedown="tBtn('a',1)" onmouseup="tBtn('a',0)">A</button>
+        <button class="dpad-btn action" data-btn="b">B</button>
+        <button class="dpad-btn action a" data-btn="a">A</button>
       </div>
     </div>
   </div>
@@ -956,25 +958,30 @@ renderSpots();
 
 /* ── AUDIO: multi-song polyphonic engine ── */
 var _ac = null;
-var _audioUnlocked = false;
+var _acReady = null;
 
 function getAC() {
-  if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+  if (!_ac) {
+    _ac = new (window.AudioContext || window.webkitAudioContext)();
+    _acReady = _ac.state === 'running' ? Promise.resolve() : _ac.resume();
+  } else if (_ac.state === 'suspended') {
+    _acReady = _ac.resume();
+  }
   return _ac;
 }
 
-function unlockAudio() {
-  var ac = getAC();
-  if (ac.state === 'suspended') ac.resume();
-  if (!_audioUnlocked) {
-    var buf = ac.createBuffer(1, 1, 22050);
-    var src = ac.createBufferSource();
-    src.buffer = buf;
-    src.connect(ac.destination);
-    if (src.start) src.start(0); else src.noteOn(0);
-    _audioUnlocked = true;
-  }
+function ensureAudioReady() {
+  return _acReady || Promise.resolve();
 }
+
+window.audioTest = function() {
+  try {
+    playTone(440, 0.5, 'sine', 0.3);
+    setAudioStatus('test tone played • state: ' + getAC().state);
+  } catch (e) {
+    setAudioStatus('test tone error: ' + e.message);
+  }
+};
 
 function noteFreq(n) {
   if (n === null || n === 'r') return 0;
@@ -986,139 +993,178 @@ function noteFreq(n) {
   return 440 * Math.pow(2, (oct*12 + semi - 69) / 12);
 }
 
-/* ──────────────────────────────────────────
-   SONG 1: KOROBEINIKI (Tetris A-theme)
-   melody / harmony / bass — all in beats
-────────────────────────────────────────── */
-var KOROBEINIKI = {
-  bpm: 150,
-  melody: [
-    ['E5',1],['B4',0.5],['C5',0.5],['D5',1],['C5',0.5],['B4',0.5],
-    ['A4',1],['A4',0.5],['C5',0.5],['E5',1],['D5',0.5],['C5',0.5],
-    ['B4',1.5],['C5',0.5],['D5',1],['E5',1],
-    ['C5',1],['A4',1],['A4',2],
-    ['D5',1.5],['F5',0.5],['A5',1],['G5',0.5],['F5',0.5],
-    ['E5',1.5],['C5',0.5],['E5',1],['D5',0.5],['C5',0.5],
-    ['B4',1],['B4',0.5],['C5',0.5],['D5',1],['E5',1],
-    ['C5',1],['A4',1],['A4',2],
-  ],
-  harmony: [
-    ['G4',1],['G4',1],['G4',1],['G4',1],
-    ['E4',1],['E4',1],['E4',1],['E4',1],
-    ['G4',2],['G4',2],
-    ['E4',2],['E4',2],
-    ['F4',2],['F4',2],
-    ['G4',2],['G4',2],
-    ['G4',1],['G4',1],['G4',1],['G4',1],
-    ['E4',2],['E4',2],
-  ],
-  bass: [
-    ['A2',1],['E3',1],['A2',1],['E3',1],
-    ['A2',1],['E3',1],['A2',1],['E3',1],
-    ['A2',1],['E3',1],['A2',1],['E3',1],
-    ['A2',1],['E3',1],['A2',1],['E3',1],
-    ['D3',1],['A3',1],['D3',1],['A3',1],
-    ['C3',1],['G3',1],['C3',1],['G3',1],
-    ['E3',1],['B3',1],['E3',1],['B3',1],
-    ['A2',1],['E3',1],['A2',1],['E3',1],
-  ],
+function playTone(freq, duration, type, volume) {
+  var ctx = getAC();
+  ensureAudioReady().then(function() {
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(volume || 0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+  });
+}
+
+function playChord(freqs, duration, type, volume) {
+  var ctx = getAC();
+  ensureAudioReady().then(function() {
+    freqs.forEach(function(freq) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(volume || 0.15, ctx.currentTime + 0.05);
+      gain.gain.setValueAtTime(volume || 0.15, ctx.currentTime + duration - 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + duration);
+    });
+  });
+}
+
+var N = {
+  A2:110.00, B2:123.47, C3:130.81, D3:146.83, E3:164.81, F3:174.61, G3:196.00,
+  Gs3:207.65, A3:220.00, B3:246.94,
+  C4:261.63, D4:293.66, E4:329.63, F4:349.23, Gs4:415.30, G4:392.00, A4:440.00, B4:493.88,
+  C5:523.25, D5:587.33, Ds5:622.25, E5:659.25, F5:698.46, G5:783.99, Gs5:830.61, A5:880.00
 };
 
-/* ──────────────────────────────────────────
-   SONG 2: DANCE OF THE SUGAR PLUM FAIRY (Tetris B-theme)
-   Tchaikovsky — celesta line + counterpoint + plucked bass
-────────────────────────────────────────── */
-var SUGAR_PLUM = {
-  bpm: 132,
-  melody: [
-    ['E5',0.5],['D#5',0.5],['E5',0.5],['B4',0.5],['D5',0.5],['C5',0.5],['A4',1],
-    ['C4',0.5],['E4',0.5],['A4',0.5],['B4',1.5],
-    ['E4',0.5],['G#4',0.5],['B4',0.5],['C5',1.5],
-    ['E5',0.5],['D#5',0.5],['E5',0.5],['B4',0.5],['D5',0.5],['C5',0.5],['A4',1],
-    ['C4',0.5],['E4',0.5],['A4',0.5],['B4',0.5],['E4',0.5],['C5',0.5],['B4',0.5],['A4',1],
-    ['B4',0.5],['C5',0.5],['D5',0.5],['E5',0.5],['F5',0.5],['G5',0.5],['A5',1],
-    ['G#5',0.5],['F5',0.5],['E5',0.5],['D5',0.5],['C5',0.5],['B4',0.5],['A4',1.5],
-    ['E5',0.5],['F5',0.5],['E5',0.5],['D5',0.5],['C5',0.5],['B4',0.5],['A4',1.5],
-  ],
-  harmony: [
-    ['C4',2],['A3',2],
-    ['A3',2],['G#3',2],
-    ['G#3',2],['A3',2],
-    ['C4',2],['A3',2],
-    ['A3',2],['G#3',2],
-    ['A3',1],['B3',1],['C4',2],
-    ['B3',2],['A3',2],
-    ['G#3',2],['A3',2],
-  ],
-  bass: [
-    ['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],
-    ['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],['G#2',0.5],['r',0.5],['E3',0.5],['r',0.5],
-    ['G#2',0.5],['r',0.5],['E3',0.5],['r',0.5],['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],
-    ['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],
-    ['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],['G#2',0.5],['r',0.5],['E3',0.5],['r',0.5],
-    ['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],
-    ['E2',0.5],['r',0.5],['B2',0.5],['r',0.5],['E2',0.5],['r',0.5],['B2',0.5],['r',0.5],
-    ['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],['A2',0.5],['r',0.5],['E3',0.5],['r',0.5],
-  ],
-};
+var Am = [N.A3, N.C4, N.E4];
+var Em = [N.E3, N.G4, N.B3];
+var Dm = [N.D3, N.F4, N.A3];
+var FM = [N.F3, N.A3, N.C4];
+var EM = [N.E3, N.Gs3, N.B3];
+
+var KOROBEINIKI = [
+  { mel: N.E5, dur: 0.4, chord: Em, bass: N.E3 },
+  { mel: N.B4, dur: 0.2, chord: Em, bass: N.E3 },
+  { mel: N.C5, dur: 0.2, chord: Am, bass: N.A2 },
+  { mel: N.D5, dur: 0.4, chord: Am, bass: N.A2 },
+  { mel: N.C5, dur: 0.2, chord: Am, bass: N.A2 },
+  { mel: N.B4, dur: 0.2, chord: Am, bass: N.A2 },
+  { mel: N.A4, dur: 0.4, chord: Am, bass: N.A2 },
+  { mel: N.A4, dur: 0.2, chord: Am, bass: N.A2 },
+  { mel: N.C5, dur: 0.2, chord: Am, bass: N.A2 },
+  { mel: N.E5, dur: 0.4, chord: Am, bass: N.A2 },
+  { mel: N.D5, dur: 0.2, chord: Am, bass: N.A2 },
+  { mel: N.C5, dur: 0.2, chord: Am, bass: N.A2 },
+  { mel: N.B4, dur: 0.6, chord: Em, bass: N.E3 },
+  { mel: N.C5, dur: 0.2, chord: Em, bass: N.E3 },
+  { mel: N.D5, dur: 0.4, chord: Em, bass: N.E3 },
+  { mel: N.E5, dur: 0.4, chord: Em, bass: N.E3 },
+  { mel: N.C5, dur: 0.4, chord: Am, bass: N.A2 },
+  { mel: N.A4, dur: 0.4, chord: Am, bass: N.A2 },
+  { mel: N.A4, dur: 0.8, chord: Am, bass: N.A2 },
+  { mel: N.D5, dur: 0.6, chord: Dm, bass: N.D3 },
+  { mel: N.F5, dur: 0.2, chord: Dm, bass: N.D3 },
+  { mel: N.A5, dur: 0.4, chord: Dm, bass: N.D3 },
+  { mel: N.G5, dur: 0.2, chord: Dm, bass: N.D3 },
+  { mel: N.F5, dur: 0.2, chord: Dm, bass: N.D3 },
+  { mel: N.E5, dur: 0.6, chord: FM, bass: N.F3 },
+  { mel: N.C5, dur: 0.2, chord: FM, bass: N.F3 },
+  { mel: N.E5, dur: 0.4, chord: Am, bass: N.A2 },
+  { mel: N.D5, dur: 0.2, chord: Am, bass: N.A2 },
+  { mel: N.C5, dur: 0.2, chord: Am, bass: N.A2 },
+  { mel: N.B4, dur: 0.4, chord: Em, bass: N.E3 },
+  { mel: N.B4, dur: 0.2, chord: Em, bass: N.E3 },
+  { mel: N.C5, dur: 0.2, chord: Em, bass: N.E3 },
+  { mel: N.D5, dur: 0.4, chord: Em, bass: N.E3 },
+  { mel: N.E5, dur: 0.4, chord: Em, bass: N.E3 },
+  { mel: N.C5, dur: 0.4, chord: Am, bass: N.A2 },
+  { mel: N.A4, dur: 0.4, chord: Am, bass: N.A2 },
+  { mel: N.A4, dur: 0.8, chord: Am, bass: N.A2 }
+];
+
+var SUGAR_PLUM = [
+  { mel: N.E5,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.Ds5, dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.E5,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.B4,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.D5,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.C5,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.A4,  dur: 0.6, chord: Am, bass: N.A2 },
+  { mel: N.C4,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.E4,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.A4,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.B4,  dur: 0.9, chord: EM, bass: N.E3 },
+  { mel: N.E4,  dur: 0.3, chord: EM, bass: N.E3 },
+  { mel: N.Gs4, dur: 0.3, chord: EM, bass: N.E3 },
+  { mel: N.B4,  dur: 0.3, chord: EM, bass: N.E3 },
+  { mel: N.C5,  dur: 0.9, chord: Am, bass: N.A2 },
+  { mel: N.E5,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.Ds5, dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.E5,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.B4,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.D5,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.C5,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.A4,  dur: 0.6, chord: Am, bass: N.A2 },
+  { mel: N.C4,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.E4,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.A4,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.B4,  dur: 0.3, chord: EM, bass: N.E3 },
+  { mel: N.E4,  dur: 0.3, chord: EM, bass: N.E3 },
+  { mel: N.C5,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.B4,  dur: 0.3, chord: Am, bass: N.A2 },
+  { mel: N.A4,  dur: 0.6, chord: Am, bass: N.A2 }
+];
 
 var SONGS = { korobeiniki: KOROBEINIKI, sugarplum: SUGAR_PLUM };
 var currentSong = 'korobeiniki';
-var _audioRunning = false;
-var _voiceTimers = { m: null, h: null, b: null };
-
-function playVoice(voice, seq, idx, bpm, oscType, vol, releaseRatio) {
-  if (!_audioRunning) return;
-  idx = idx % seq.length;
-  var ac = getAC();
-  var beat = 60 / bpm;
-  var note = seq[idx];
-  var freq = noteFreq(note[0]);
-  var dur  = note[1] * beat;
-
-  if (freq > 0) {
-    var osc = ac.createOscillator();
-    var gain = ac.createGain();
-    osc.type = oscType;
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0, ac.currentTime);
-    gain.gain.linearRampToValueAtTime(vol, ac.currentTime + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur * releaseRatio);
-    osc.connect(gain); gain.connect(ac.destination);
-    osc.start();
-    osc.stop(ac.currentTime + dur * releaseRatio + 0.02);
-  }
-
-  _voiceTimers[voice] = setTimeout(function(){
-    playVoice(voice, seq, idx+1, bpm, oscType, vol, releaseRatio);
-  }, dur * 1000);
-}
+var musicPlaying = false;
+var musicTimeouts = [];
 
 function startMusic() {
-  _audioRunning = true;
-  var ac = getAC();
-  if (ac.state === 'suspended') ac.resume();
-  var song = SONGS[currentSong];
-  if (currentSong === 'sugarplum') {
-    playVoice('m', song.melody,  0, song.bpm, 'triangle', 0.18, 0.85);
-    playVoice('h', song.harmony, 0, song.bpm, 'sine',     0.09, 0.9);
-    playVoice('b', song.bass,    0, song.bpm, 'triangle', 0.14, 0.6);
-  } else {
-    playVoice('m', song.melody,  0, song.bpm, 'square',   0.11, 0.92);
-    playVoice('h', song.harmony, 0, song.bpm, 'square',   0.06, 0.92);
-    playVoice('b', song.bass,    0, song.bpm, 'triangle', 0.13, 0.85);
-  }
+  if (musicPlaying) return;
+  musicPlaying = true;
+  setAudioStatus('playing ' + (currentSong === 'sugarplum' ? 'Sugar Plum' : 'Korobeiniki'));
+  ensureAudioReady().then(function() {
+    playMelodyLoop();
+  });
 }
 
 function stopMusic() {
-  _audioRunning = false;
-  clearTimeout(_voiceTimers.m);
-  clearTimeout(_voiceTimers.h);
-  clearTimeout(_voiceTimers.b);
+  musicPlaying = false;
+  musicTimeouts.forEach(function(t){ clearTimeout(t); });
+  musicTimeouts = [];
+}
+
+function playMelodyLoop() {
+  if (!musicPlaying) return;
+  var song = SONGS[currentSong];
+  var t = 0;
+  song.forEach(function(note) {
+    var timeout = setTimeout(function() {
+      if (!musicPlaying) return;
+      playTone(note.mel, note.dur * 0.9, currentSong === 'sugarplum' ? 'triangle' : 'square', 0.22);
+      playChord(note.chord, note.dur * 0.95, 'sine', 0.06);
+      playTone(note.bass, note.dur * 0.95, 'sine', 0.14);
+    }, t * 1000);
+    musicTimeouts.push(timeout);
+    t += note.dur;
+  });
+  var loopTimeout = setTimeout(function() {
+    if (musicPlaying) playMelodyLoop();
+  }, t * 1000 + 300);
+  musicTimeouts.push(loopTimeout);
+}
+
+function setAudioStatus(msg) {
+  var el = document.getElementById('audio-status');
+  if (el) el.textContent = msg;
+  console.log('[AUDIO]', msg);
 }
 
 function pauseMusic() { stopMusic(); }
 function resumeMusic() { startMusic(); }
+
+
 
 /* ── TETRIS GAME ── */
 var COLS = 10, ROWS = 20, SZ = 20;
@@ -1151,15 +1197,26 @@ function tetrisInit() {
 }
 
 window.pickSong = function(name) {
-  unlockAudio();
   currentSong = name;
   document.querySelectorAll('.song-btn').forEach(function(b){
     b.classList.toggle('selected', b.getAttribute('data-song') === name);
   });
+  if (name === 'sugarplum') {
+    playTone(N.E5, 0.2, 'triangle', 0.25);
+    setTimeout(function(){ playTone(N.A4, 0.3, 'triangle', 0.25); }, 150);
+  } else {
+    playTone(N.E5, 0.15, 'square', 0.25);
+    setTimeout(function(){ playTone(N.B4, 0.15, 'square', 0.25); }, 100);
+    setTimeout(function(){ playTone(N.E5, 0.2,  'square', 0.25); }, 200);
+  }
+  setAudioStatus('Selected ' + (name === 'sugarplum' ? 'Sugar Plum' : 'Korobeiniki') + ' • ' + getAC().state);
 };
 
 window.tetrisStart = function() {
-  unlockAudio();
+  var ctx = getAC();
+  if (ctx.state === 'suspended') {
+    _acReady = ctx.resume();
+  }
   tetrisInit();
   board = Array.from({length: ROWS}, function(){ return new Array(COLS).fill(0); });
   score = 0; lines = 0; level = 1; gameOver = false; paused = false; running = true;
@@ -1406,6 +1463,42 @@ function endGame() {
 
 // Init canvas on load
 setTimeout(tetrisInit, 100);
+setTimeout(bindControlButtons, 150);
+
+function bindControlButtons() {
+  document.querySelectorAll('[data-btn]').forEach(function(btn) {
+    var key = btn.getAttribute('data-btn');
+    var isDown = false;
+
+    function press(e) {
+      if (e) e.preventDefault();
+      if (isDown) return;
+      isDown = true;
+      tBtn(key, 1);
+    }
+
+    function release(e) {
+      if (e) e.preventDefault();
+      if (!isDown) return;
+      isDown = false;
+      tBtn(key, 0);
+    }
+
+    if (window.PointerEvent) {
+      btn.addEventListener('pointerdown', press);
+      btn.addEventListener('pointerup', release);
+      btn.addEventListener('pointercancel', release);
+      btn.addEventListener('pointerleave', release);
+    } else {
+      btn.addEventListener('touchstart', press, { passive: false });
+      btn.addEventListener('touchend', release);
+      btn.addEventListener('touchcancel', release);
+      btn.addEventListener('mousedown', press);
+      btn.addEventListener('mouseup', release);
+      btn.addEventListener('mouseleave', release);
+    }
+  });
+}
 
 })();
 </script>
